@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#10151f">
+<title>WA Robot Safe</title>
+<style>
+*{box-sizing:border-box}body{margin:0;padding:16px;background:#0c111a;color:#f4f7fb;font:15px system-ui}header{display:flex;gap:12px;align-items:center;margin:8px 0 20px}.logo{background:#22c58b;color:#05291d;border-radius:13px;padding:12px;font-weight:900}h1{font-size:20px;margin:0}.muted{color:#a4b1c3;font-size:12px}.card{background:#151e2b;border:1px solid #2b394d;border-radius:16px;padding:15px;margin:12px 0}h2{font-size:17px;margin:0 0 12px}h3{font-size:14px;margin:14px 0 8px}label{display:block;color:#b8c4d5;font-size:12px;margin:10px 0 5px}input,textarea,select{width:100%;background:#0e1622;color:white;border:1px solid #35445a;border-radius:9px;padding:11px;font:inherit}textarea{min-height:85px}button{width:100%;border:0;border-radius:10px;padding:12px;margin-top:9px;background:#22c58b;color:#06251b;font-weight:800;font-size:14px}.secondary{background:#26354a;color:white}.danger{background:#512634;color:#ffe0e5}.notice{background:#1d2b3a;border-left:3px solid #22c58b;padding:11px;border-radius:8px;font-size:12px;line-height:1.5}.item{border-top:1px solid #2b394d;padding:11px 0}.item small{display:block;color:#a4b1c3;margin-top:4px}.tabs{display:flex;gap:6px;overflow:auto}.tabs button{width:auto;white-space:nowrap;background:#26354a;color:white}.tabs button.on{background:#22c58b;color:#06251b}.page{display:none}.page.on{display:block}.row{display:flex;gap:8px;align-items:center}.row button{flex:1}.pill{font-size:10px;padding:3px 7px;border-radius:20px;background:#164332;color:#8fe9c6}
+</style>
+</head>
+<body>
+<header><div class="logo">WA</div><div><h1>WA Robot <span style="color:#72e0b4">Safe</span></h1><div class="muted">Assistente local · WhatsApp Business</div></div></header>
+<div class="tabs">
+<button class="on" data-page="home">Início</button><button data-page="contacts">Contatos</button><button data-page="compose">Mensagem</button><button data-page="queue">Fila</button><button data-page="safe">Proteção</button>
+</div>
+<section id="home" class="page on">
+<div class="card"><h2>Painel</h2><div id="stats" class="muted"></div></div>
+<div class="card"><h2>Como funciona</h2><p class="notice">O aplicativo guarda contatos, consentimentos, bloqueios, mensagens e lembretes localmente. Para enviar, abre a conversa oficial com o texto preenchido. Você revisa e toca em Enviar no WhatsApp.</p><p class="notice" style="border-color:#e6ad51">Não há disparo automático. Não use o app para mensagens automáticas ou em massa não autorizadas.</p></div>
+</section>
+<section id="contacts" class="page">
+<div class="card"><h2>Cadastrar contato</h2>
+<button type="button" class="secondary" onclick="pickFromAgenda()">📥 Escolher da agenda</button>
+<label>Nome</label><input id="name" placeholder="Nome">
+<label>Telefone do contato (DDD + número)</label><div class="row"><span style="padding:11px;background:#26354a;border-radius:9px;font-weight:800">+55</span><input id="phone" inputmode="numeric" maxlength="11" placeholder="85999999999"></div><small class="muted">O código do Brasil será incluído automaticamente.</small>
+<label>Tipo</label><select id="type"><option>Cliente</option><option>Pessoal</option></select>
+<label>Consentimento para mensagens da empresa</label><select id="consent"><option value="no">Não registrado</option><option value="yes">Autorizado</option></select>
+<label>Origem / observação do consentimento</label><input id="evidence" placeholder="Ex.: formulário, data e finalidade">
+<button id="saveContactBtn" onclick="addContact()">Salvar contato</button><button id="cancelEditBtn" class="secondary" style="display:none" onclick="cancelEdit()">Cancelar edição</button><div id="editHint" class="muted" style="display:none">Editando contato existente. As mensagens pendentes continuam vinculadas.</div>
+</div><div class="card"><h2>Contatos</h2><div id="contactList"></div></div>
+</section>
+<section id="compose" class="page"><div class="card"><h2>Preparar mensagem</h2>
+<label>Destinatário</label><select id="recipient"></select>
+<label>Texto da mensagem</label><textarea id="body" placeholder="Olá, {nome}! Tudo bem?"></textarea>
+<div class="row"><button class="secondary" onclick="insertToken('{nome}')">+ Inserir nome</button><button class="secondary" onclick="insertToken('{telefone}')">+ Inserir telefone</button></div>
+<div class="notice" style="margin-top:10px"><b>Personalização automática</b><br>Use <b>{nome}</b> e <b>{telefone}</b>. Os campos são substituídos antes de abrir a conversa.</div>
+<div class="card" style="margin:12px 0;background:#0e1622"><b>Prévia da mensagem</b><div id="messagePreview" class="muted" style="white-space:pre-wrap;margin-top:8px">Sua mensagem aparecerá aqui.</div></div>
+<label>Data e hora para lembrar</label><input type="datetime-local" id="when">
+<label>Categoria</label><select id="category"><option>Atendimento solicitado</option><option>Atualização solicitada</option><option>Mensagem pessoal</option><option>Marketing autorizado</option></select>
+<button onclick="enqueue()">Adicionar à fila</button></div></section>
+<section id="queue" class="page"><div class="card"><h2>Fila / lembretes</h2><div id="queueList"></div></div></section>
+<section id="safe" class="page"><div class="card"><h2>Proteção</h2>
+<label>Intervalo de organização (minutos)</label><input type="number" id="interval" min="0" max="1440" value="5">
+<p class="muted">Serve apenas como lembrete operacional; não controla envio nem contorna limites do WhatsApp.</p>
+<label>Bloquear número / pedido de parada</label><div class="row"><span style="padding:11px;background:#26354a;border-radius:9px;font-weight:800">+55</span><input id="blockPhone" inputmode="numeric" maxlength="13" placeholder="DDD + número"></div>
+<button class="danger" onclick="block()">Bloquear contato</button><h3>Bloqueados</h3><div id="blocked"></div>
+<button class="secondary" onclick="backup()">Exportar backup JSON</button><button class="danger" onclick="wipe()">Apagar todos os dados</button></div></section>
+<script>
+const K='waRobotSafeData';let db=JSON.parse(localStorage.getItem(K)||'{"contacts":[],"queue":[],"blocked":[],"interval":5}');
+let editingContactId=null;
+const $=id=>document.getElementById(id),digits=s=>String(s||'').replace(/\D/g,'');
+function brPhone(value){let p=digits(value);if(p.startsWith('55')&&(p.length===12||p.length===13))return p;if(p.length===10||p.length===11)return '55'+p;return ''}
+function save(){localStorage.setItem(K,JSON.stringify(db));render()}
+function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+document.querySelectorAll('[data-page]').forEach(b=>b.onclick=()=>{document.querySelectorAll('.page').forEach(p=>p.classList.toggle('on',p.id===b.dataset.page));document.querySelectorAll('[data-page]').forEach(x=>x.classList.toggle('on',x===b))});
+function pickFromAgenda(){if(window.AndroidBridge&&AndroidBridge.pickContact)AndroidBridge.pickContact();else alert('A agenda do aparelho fica disponível na versão Android instalada.')}
+window.onNativeContactPicked=function(name,phone){$('name').value=name||'';let p=digits(phone);if(p.startsWith('55')&&(p.length===12||p.length===13))p=p.slice(2);$('phone').value=p;$('name').focus()};
+function addContact(){
+ let n=$('name').value.trim(),p=brPhone($('phone').value);
+ if(!n||!p)return alert('Informe nome e telefone com DDD válido (10 ou 11 dígitos).');
+ if(db.blocked.includes(p))return alert('Número bloqueado.');
+ const duplicate=db.contacts.find(c=>c.phone===p&&c.id!==editingContactId);
+ if(duplicate)return alert('Esse telefone já está cadastrado para '+duplicate.name+'.');
+ if(editingContactId!==null){const c=db.contacts.find(x=>x.id===editingContactId);if(!c){cancelEdit();return alert('Contato não encontrado.')}c.name=n;c.phone=p;c.type=$('type').value;c.consent=$('consent').value==='yes';c.evidence=$('evidence').value}
+ else db.contacts.push({id:Date.now(),name:n,phone:p,type:$('type').value,consent:$('consent').value==='yes',evidence:$('evidence').value});
+ cancelEdit(false);save();
+}
+function editContact(id){const c=db.contacts.find(x=>x.id===id);if(!c)return;editingContactId=id;$('name').value=c.name;let p=digits(c.phone);if(p.startsWith('55')&&(p.length===12||p.length===13))p=p.slice(2);$('phone').value=p;$('type').value=c.type;$('consent').value=c.consent?'yes':'no';$('evidence').value=c.evidence||'';$('saveContactBtn').textContent='Salvar alterações';$('cancelEditBtn').style.display='block';$('editHint').style.display='block';document.querySelector('[data-page=contacts]').click();window.scrollTo(0,0)}
+function cancelEdit(){editingContactId=null;['name','phone','evidence'].forEach(x=>$(x).value='');$('type').value='Cliente';$('consent').value='no';$('saveContactBtn').textContent='Salvar contato';$('cancelEditBtn').style.display='none';$('editHint').style.display='none'}
+function insertToken(token){const el=$('body'),start=el.selectionStart??el.value.length,end=el.selectionEnd??el.value.length;el.value=el.value.slice(0,start)+token+el.value.slice(end);el.focus();el.selectionStart=el.selectionEnd=start+token.length;updatePreview()}
+function personalizedText(template,c){return String(template||'').replaceAll('{nome}',c?.name||'').replaceAll('{telefone}',c?.phone||'')}
+function updatePreview(){const c=db.contacts.find(x=>x.id==$('recipient').value),t=$('body').value;$('messagePreview').textContent=t?personalizedText(t,c):'Sua mensagem aparecerá aqui.'}
+function enqueue(){let c=db.contacts.find(x=>x.id==$('recipient').value),t=$('body').value.trim();if(!c||!t)return alert('Escolha contato e mensagem.');if(db.blocked.includes(c.phone))return alert('Contato bloqueado.');if(c.type==='Cliente'&&!c.consent)return alert('Bloqueado: falta consentimento empresarial registrado.');if(c.type==='Pessoal'&&!c.consent&&!confirm('Confirme que é uma mensagem pessoal esperada e solicitada.'))return;let when=$('when').value?new Date($('when').value).toISOString():new Date().toISOString();db.queue.push({id:Date.now(),contactId:c.id,text:t,when,category:$('category').value,status:'Pendente'});$('body').value='';$('when').value='';save();document.querySelector('[data-page=queue]').click()}
+function openMsg(id){let q=db.queue.find(x=>x.id===id),c=db.contacts.find(x=>x.id===q.contactId);if(!c||db.blocked.includes(c.phone))return alert('Contato indisponível ou bloqueado.');if(c.type==='Cliente'&&!c.consent)return alert('Sem consentimento empresarial.');if(new Date(q.when)>new Date()&&!confirm('O lembrete ainda não chegou. Abrir mesmo assim?'))return;let m=personalizedText(q.text,c);q.status='Aberta para revisão';save();if(window.AndroidBridge)AndroidBridge.openWhatsApp(c.phone,m);else location.href='https://wa.me/'+c.phone+'?text='+encodeURIComponent(m)}
+function del(id){db.queue=db.queue.filter(q=>q.id!==id);save()}
+function block(){let p=brPhone($('blockPhone').value);if(!p)return alert('Informe DDD + telefone válido (10 ou 11 dígitos).');if(!db.blocked.includes(p))db.blocked.push(p);db.contacts=db.contacts.filter(c=>c.phone!==p);db.queue=db.queue.filter(q=>db.contacts.some(c=>c.id===q.contactId));$('blockPhone').value='';save()}
+function unblock(p){db.blocked=db.blocked.filter(x=>x!==p);save()}
+function backup(){let a=document.createElement('a'),u=URL.createObjectURL(new Blob([JSON.stringify(db,null,2)],{type:'application/json'}));a.href=u;a.download='wa-robot-safe-backup.json';a.click();URL.revokeObjectURL(u)}
+function wipe(){if(confirm('Apagar todos os dados locais?')){db={contacts:[],queue:[],blocked:[],interval:5};save()}}
+function render(){
+ $('stats').textContent=db.contacts.length+' contatos • '+db.contacts.filter(c=>c.consent).length+' com consentimento registrado • '+db.queue.filter(q=>q.status==='Pendente').length+' lembretes pendentes';
+ $('recipient').innerHTML=db.contacts.filter(c=>!db.blocked.includes(c.phone)).map(c=>'<option value="'+c.id+'">'+esc(c.name)+' — '+esc(c.phone)+' '+(c.consent?'✓':'')+'</option>').join('')||'<option value="">Cadastre um contato</option>';updatePreview();
+ $('contactList').innerHTML=db.contacts.map(c=>'<div class="item"><b>'+esc(c.name)+'</b> <span class="pill">'+esc(c.type)+'</span><small>'+esc(c.phone)+' · '+(c.consent?'Consentimento registrado':'Sem consentimento registrado')+'</small><small>'+esc(c.evidence)+'</small><button class="secondary" onclick="editContact('+c.id+')">Editar contato</button><button class="danger" onclick="blockByPhone(\''+c.phone+'\')">Bloquear / opt-out</button></div>').join('')||'<p class="muted">Nenhum contato cadastrado.</p>';
+ $('queueList').innerHTML=db.queue.map(q=>{let c=db.contacts.find(x=>x.id===q.contactId);return '<div class="item"><b>'+esc(c?.name||'Contato removido')+'</b><small>'+new Date(q.when).toLocaleString()+' · '+esc(q.category)+' · '+esc(q.status)+'</small><small>'+esc(q.text)+'</small><button onclick="openMsg('+q.id+')">Revisar e abrir no WhatsApp</button><button class="danger" onclick="del('+q.id+')">Excluir</button></div>'}).join('')||'<p class="muted">Fila vazia.</p>';
+ $('blocked').innerHTML=db.blocked.map(p=>'<div class="item">'+esc(p)+' <button class="secondary" onclick="unblock(\''+p+'\')">Desbloquear</button></div>').join('')||'<p class="muted">Nenhum número bloqueado.</p>';$('interval').value=db.interval;
+}
+function blockByPhone(phone){if(!db.blocked.includes(phone))db.blocked.push(phone);db.contacts=db.contacts.filter(c=>c.phone!==phone);db.queue=db.queue.filter(q=>db.contacts.some(c=>c.id===q.contactId));save()}
+$('interval').onchange=()=>{db.interval=Math.max(0,Math.min(1440,Number($('interval').value)||0));save()};
+$('body').addEventListener('input',updatePreview);$('recipient').addEventListener('change',updatePreview);render();
+</script></body></html>
