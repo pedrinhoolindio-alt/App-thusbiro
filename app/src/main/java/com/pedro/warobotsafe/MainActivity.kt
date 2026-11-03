@@ -15,46 +15,40 @@ import java.net.URLEncoder
 class MainActivity : ComponentActivity() {
     private lateinit var web: WebView
 
-    // Seletor nativo do Android: só lê o contato escolhido pelo usuário, sem pedir acesso à agenda inteira.
-    private val contactPicker = registerForActivityResult(ActivityResultContracts.PickContact()) { uri ->
-        if (uri != null) importSelectedContact(uri)
+    // Abre o seletor nativo diretamente na lista de números telefônicos.
+    // O Android concede acesso somente ao item escolhido, sem READ_CONTACTS.
+    private val phonePicker = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        if (result.resultCode == RESULT_OK) {
+            val uri = result.data?.data
+            if (uri != null) importSelectedPhone(uri)
+            else Toast.makeText(this, "Nenhum telefone foi selecionado.", Toast.LENGTH_LONG).show()
+        }
     }
 
-    private fun importSelectedContact(uri: Uri) {
+    private fun importSelectedPhone(uri: Uri) {
         try {
             var displayName = ""
+            var phone = ""
             contentResolver.query(
                 uri,
-                arrayOf(ContactsContract.Contacts.DISPLAY_NAME),
+                arrayOf(
+                    ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME,
+                    ContactsContract.CommonDataKinds.Phone.NUMBER
+                ),
                 null, null, null
             )?.use { cursor ->
                 if (cursor.moveToFirst()) {
                     displayName = cursor.getString(0) ?: ""
+                    phone = cursor.getString(1) ?: ""
                 }
             }
 
-            var phone = ""
-            // Consulta os dados filhos do URI concedido pelo seletor, evitando READ_CONTACTS.
-            val dataUri = Uri.withAppendedPath(uri, ContactsContract.Contacts.Data.CONTENT_DIRECTORY)
-            contentResolver.query(
-                dataUri,
-                arrayOf(
-                    ContactsContract.CommonDataKinds.Phone.NUMBER,
-                    ContactsContract.Data.MIMETYPE
-                ),
-                "${ContactsContract.Data.MIMETYPE} = ?",
-                arrayOf(ContactsContract.CommonDataKinds.Phone.CONTENT_ITEM_TYPE),
-                null
-            )?.use { cursor ->
-                if (cursor.moveToFirst()) phone = cursor.getString(0) ?: ""
-            }
-
             if (phone.isBlank()) {
-                Toast.makeText(this, "Esse contato não tem telefone cadastrado.", Toast.LENGTH_LONG).show()
+                Toast.makeText(this, "O item escolhido não contém um número de telefone.", Toast.LENGTH_LONG).show()
                 return
             }
 
-            // O formulário brasileiro usa DDD + número; remove +55 para não duplicar o prefixo visual.
+            // O formulário já exibe +55, então removemos o código do país do campo numérico.
             var digits = phone.filter { it.isDigit() }
             if (digits.startsWith("55") && (digits.length == 12 || digits.length == 13)) {
                 digits = digits.drop(2)
@@ -66,7 +60,11 @@ class MainActivity : ComponentActivity() {
                 null
             )
         } catch (e: Exception) {
-            Toast.makeText(this, "Não foi possível importar esse contato.", Toast.LENGTH_LONG).show()
+            Toast.makeText(
+                this,
+                "Falha ao ler o telefone escolhido: ${e.localizedMessage ?: "erro de acesso"}",
+                Toast.LENGTH_LONG
+            ).show()
         }
     }
 
@@ -84,7 +82,21 @@ class MainActivity : ComponentActivity() {
     inner class Bridge {
         @JavascriptInterface
         fun pickContact() {
-            runOnUiThread { contactPicker.launch(null) }
+            runOnUiThread {
+                try {
+                    val intent = Intent(
+                        Intent.ACTION_PICK,
+                        ContactsContract.CommonDataKinds.Phone.CONTENT_URI
+                    )
+                    phonePicker.launch(intent)
+                } catch (e: Exception) {
+                    Toast.makeText(
+                        this@MainActivity,
+                        "Não foi possível abrir a agenda do aparelho.",
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
+            }
         }
 
         @JavascriptInterface
@@ -96,7 +108,6 @@ class MainActivity : ComponentActivity() {
                     return@runOnUiThread
                 }
                 val text = URLEncoder.encode(message, "UTF-8")
-                // Direciona ao WhatsApp Business. Não autentica nem envia automaticamente.
                 val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://wa.me/$phone?text=$text"))
                     .setPackage("com.whatsapp.w4b")
                 try {
