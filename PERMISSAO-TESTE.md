@@ -1,0 +1,1 @@
+Teste de permissão de escrita da integração. Este arquivo pode ser removido depois.
