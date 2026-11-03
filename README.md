@@ -9,11 +9,13 @@ Projeto Android local para organizar contatos e preparar mensagens para WhatsApp
 - Lista de bloqueio / opt-out.
 - Personalização de mensagens com `{nome}` e `{telefone}`, com prévia.
 - Fila e lembretes agendados.
+- Modo de sequência assistida: ordena pendências por horário, permite abrir o próximo item manualmente e aplica o intervalo configurado entre aberturas enquanto estiver ativo.
+- Pausa da sequência e registro local do horário da última conversa aberta.
 - Backup local em JSON.
 - Abertura da conversa no WhatsApp Business com o texto preenchido.
 
 ## Envio e conformidade
-O app não envia mensagens em segundo plano, não simula cliques e não contorna proteções. O usuário revisa o conteúdo e toca manualmente em Enviar no WhatsApp. O intervalo é apenas um lembrete organizacional, não um mecanismo de automação de disparo. Para contatos empresariais, registre consentimento e respeite pedidos de interrupção.
+O app não envia mensagens em segundo plano, não simula cliques e não contorna proteções. O modo de sequência apenas organiza a fila e controla o intervalo entre aberturas de conversas; cada abertura depende de uma ação do usuário. O usuário revisa o conteúdo e toca manualmente em Enviar no WhatsApp. O intervalo não é um mecanismo de automação de disparo. Para contatos empresariais, registre consentimento e respeite pedidos de interrupção.
 
 ## Compilação automática do APK
 O workflow **Build Android APK** está em `.github/workflows/android-apk.yml`.
